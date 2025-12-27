@@ -1,84 +1,84 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from "ws";
 
 type Client = {
   socket: WebSocket;
   publicKey?: string;
 };
 
-const wss = new WebSocketServer({ port: 3001 });
+const PORT = Number(process.env.PORT) || 3001;
+const wss = new WebSocketServer({ port: PORT });
 
 const rooms = new Map<string, Client[]>();
 
-console.log('🔐 ShadowTalk WebSocket running on ws://localhost:3001');
+console.log(`🔐 ShadowTalk WebSocket running on port ${PORT}`);
 
-wss.on('connection', (socket) => {
+wss.on("connection", (socket) => {
   let roomId: string | null = null;
 
-  socket.on('message', (raw) => {
+  socket.on("message", (raw) => {
     const msg = JSON.parse(raw.toString());
 
     // 1️⃣ JOIN ROOM
-    if (msg.type === 'join') {
-      roomId = msg.roomId;
+    if (msg.type === "join" && typeof msg.roomId === "string") {
+      const rid = msg.roomId;   // ✅ string
+      roomId = rid;
 
-      if (!rooms.has(roomId)) {
-        rooms.set(roomId, []);
+      if (!rooms.has(rid)) {
+        rooms.set(rid, []);
       }
 
-      rooms.get(roomId)!.push({ socket });
-
+      rooms.get(rid)!.push({ socket });
       return;
     }
 
-    // 2️⃣ RECEIVE PUBLIC KEY
-    if (msg.type === 'public-key' && roomId) {
-      const clients = rooms.get(roomId);
+    // 🚨 Guard
+    if (!roomId) return;
+    const rid = roomId; // ✅ string
+
+    // 2️⃣ PUBLIC KEY
+    if (msg.type === "public-key") {
+      const clients = rooms.get(rid);
       if (!clients) return;
 
-      const sender = clients.find(c => c.socket === socket);
+      const sender = clients.find((c) => c.socket === socket);
       if (!sender) return;
 
       sender.publicKey = msg.key;
 
-      // If both clients have keys → exchange
-      if (clients.length === 2 && clients.every(c => c.publicKey)) {
+      if (clients.length === 2 && clients.every((c) => c.publicKey)) {
         clients.forEach((client) => {
-          const peerKey = clients.find(c => c !== client)!.publicKey!;
+          const peerKey = clients.find((c) => c !== client)!.publicKey!;
           client.socket.send(
-            JSON.stringify({
-              type: 'peer-key',
-              key: peerKey,
-            })
+            JSON.stringify({ type: "peer-key", key: peerKey })
           );
         });
       }
     }
 
-    // 3️⃣ ENCRYPTED MESSAGE RELAY
-    if (msg.type === 'encrypted-message' && roomId) {
-      const clients = rooms.get(roomId);
+    // 3️⃣ RELAY MESSAGE
+    if (msg.type === "encrypted-message") {
+      const clients = rooms.get(rid);
       if (!clients) return;
 
       clients
-        .filter(c => c.socket !== socket)
-        .forEach(c =>
-          c.socket.send(JSON.stringify(msg))
-        );
+        .filter((c) => c.socket !== socket)
+        .forEach((c) => c.socket.send(JSON.stringify(msg)));
     }
   });
 
-  socket.on('close', () => {
+  socket.on("close", () => {
     if (!roomId) return;
-    const clients = rooms.get(roomId);
+    const rid = roomId;
+
+    const clients = rooms.get(rid);
     if (!clients) return;
 
-    rooms.set(
-      roomId,
-      clients.filter(c => c.socket !== socket)
-    );
+    const remaining = clients.filter((c) => c.socket !== socket);
 
-    if (rooms.get(roomId)?.length === 0) {
-      rooms.delete(roomId);
+    if (remaining.length === 0) {
+      rooms.delete(rid);
+    } else {
+      rooms.set(rid, remaining);
     }
   });
 });
