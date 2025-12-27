@@ -7,9 +7,12 @@ export function useShadowSocket(
   const socketRef = useRef<WebSocket | null>(null);
   const queueRef = useRef<any[]>([]);
   const isOpenRef = useRef(false);
-
+  const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ??
+  "ws://localhost:3001";
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:3001');
+
+    const socket = new WebSocket(WS_URL);
     socketRef.current = socket;
 
     socket.onopen = () => {
