@@ -8,12 +8,12 @@ const nextConfig = {
   images: { unoptimized: true },
 
   async headers() {
-    // 🔓 DEV MODE: disable CSP completely
+    // 🔓 DEV MODE
     if (isDev) {
       return [];
     }
 
-    // 🔒 PROD MODE: strict CSP
+    // 🔒 PROD MODE
     return [
       {
         source: '/:path*',
@@ -26,7 +26,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' wss:",
+              "connect-src 'self' https: wss://shadowtalk-ws.onrender.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
