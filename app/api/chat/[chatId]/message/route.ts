@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { storeMessage, getChatById } from "@/lib/chat-utils";
 import { checkRateLimit, getRateLimitKey, getClientIp } from "@/lib/rate-limit";
