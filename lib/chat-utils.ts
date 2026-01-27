@@ -19,9 +19,6 @@ export async function createChatSession() {
   return chat;
 }
 
-/**
- * Get chat by ID
- */
 export async function getChatById(chatId: string) {
   return prisma.chat.findUnique({
     where: { id: chatId },
