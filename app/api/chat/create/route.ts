@@ -1,51 +1,29 @@
-import { NextResponse } from 'next/server';
-import { nanoid } from 'nanoid';
+import { NextRequest, NextResponse } from 'next/server';
+import { createChatSession } from '@/lib/chat-utils';
+import { checkRateLimit, getRateLimitKey, getClientIp } from '@/lib/rate-limit';
 
-const ROOM_LIFETIME_MS = 15 * 60 * 1000;
-
-// Simple in-memory rate limit (dev-safe)
-const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW = 60 * 1000;
-const RATE_LIMIT_MAX = 30;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const timestamps = rateLimitMap.get(ip) ?? [];
-
-  const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW);
-  if (recent.length >= RATE_LIMIT_MAX) return false;
-
-  recent.push(now);
-  rateLimitMap.set(ip, recent);
-  return true;
-}
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+    const ip = getClientIp(request);
+    const rateLimitKey = getRateLimitKey(ip, 'create-chat');
 
-    if (!checkRateLimit(ip)) {
+    if (!checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded' },
         { status: 429 }
       );
     }
 
-    const roomId = nanoid(10);
-    const expiresAt = new Date(Date.now() + ROOM_LIFETIME_MS).toISOString();
+    const { id, key } = await createChatSession();
 
     return NextResponse.json(
-      {
-        roomId,
-        expiresAt,
-      },
+      { id, key },
       { status: 201 }
     );
-  } catch (err) {
-    console.error('Create room error:', err);
+  } catch (error) {
+    console.error('Error creating chat:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to create chat' },
       { status: 500 }
     );
   }
