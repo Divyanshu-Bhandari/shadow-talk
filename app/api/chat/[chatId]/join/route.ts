@@ -1,8 +1,7 @@
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { getChatById } from "@/lib/chat-utils";
 
 export async function POST(
   _request: NextRequest,
@@ -10,6 +9,9 @@ export async function POST(
 ) {
   try {
     const { chatId } = params;
+
+    // 🔥 LAZY IMPORT (VERY IMPORTANT)
+    const { getChatById } = await import("@/lib/chat-utils");
 
     const chat = await getChatById(chatId);
     if (!chat) {
