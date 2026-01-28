@@ -7,13 +7,13 @@ import { checkRateLimit, getRateLimitKey, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { chatId: string } },
+  { params }: { params: { chatId: string } }, // chatId == key
 ) {
   try {
-    const { getChatById } = await import("@/lib/chat-utils");
-    const { chatId } = params;
+    const key = params.chatId;
+
     const ip = getClientIp(request);
-    const rateLimitKey = getRateLimitKey(ip, `poll-${chatId}`);
+    const rateLimitKey = getRateLimitKey(ip, `poll-${key}`);
 
     if (!checkRateLimit(rateLimitKey, 60, 60_000)) {
       return NextResponse.json(
@@ -22,7 +22,9 @@ export async function GET(
       );
     }
 
-    const chat = await getChatById(chatId);
+    const { getChatByKey } = await import("@/lib/chat-utils");
+
+    const chat = await getChatByKey(key);
     if (!chat) {
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
@@ -35,7 +37,7 @@ export async function GET(
     }
 
     const messages = await prisma.message.findMany({
-      where: { chatId },
+      where: { chatId: chat.id },
       orderBy: { createdAt: "asc" },
     });
 

@@ -27,20 +27,49 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
   const shouldAutoScrollRef = useRef(true);
+  const isActiveRef = useRef(true); // 🔥 visibility control
 
   const shareUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/chat/${chatId}?key=${chatKey}`
       : "";
 
-  /* ---------------- scroll helpers ---------------- */
+  /* ---------------- VISIBILITY / FOCUS ---------------- */
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      isActiveRef.current = document.visibilityState === "visible";
+    };
+
+    const handleFocus = () => {
+      isActiveRef.current = true;
+    };
+
+    const handleBlur = () => {
+      isActiveRef.current = false;
+    };
+
+    handleVisibility(); // initial state
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
+  /* ---------------- SCROLL HELPERS ---------------- */
 
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
 
-    // user is considered "near bottom"
     const threshold = 120;
     shouldAutoScrollRef.current =
       el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
@@ -52,9 +81,11 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
     el.scrollTop = el.scrollHeight;
   };
 
-  /* ---------------- poll ---------------- */
+  /* ---------------- POLLING ---------------- */
 
   const pollMessages = async () => {
+    if (!isActiveRef.current) return; // 🔥 STOP when tab inactive
+
     try {
       const res = await fetch(`/api/chat/${chatId}/poll`);
       if (!res.ok) {
@@ -74,7 +105,6 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
         return unique.length ? [...prev, ...unique] : prev;
       });
 
-      // scroll only if user didn't scroll up
       if (shouldAutoScrollRef.current) {
         requestAnimationFrame(scrollToBottom);
       }
@@ -85,14 +115,14 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
 
   useEffect(() => {
     pollMessages();
-    pollingRef.current = setInterval(pollMessages, 4000);
+    pollingRef.current = setInterval(pollMessages, 5000);
 
     return () => {
       pollingRef.current && clearInterval(pollingRef.current);
     };
   }, [chatId]);
 
-  /* ---------------- send ---------------- */
+  /* ---------------- SEND MESSAGE ---------------- */
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,8 +143,6 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
 
       setInputValue("");
       pollMessages();
-
-      // sending message should always scroll
       requestAnimationFrame(scrollToBottom);
     } catch {
       toast.error("Failed to send message");
@@ -123,7 +151,7 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
     }
   };
 
-  /* ---------------- misc ---------------- */
+  /* ---------------- MISC ---------------- */
 
   const handleCopyLink = async () => {
     try {
@@ -135,6 +163,8 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
       toast.error("Failed to copy link");
     }
   };
+
+  /* ---------------- SESSION EXPIRED ---------------- */
 
   if (sessionExpired) {
     return (

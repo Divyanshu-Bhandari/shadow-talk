@@ -1,25 +1,16 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimit, getRateLimitKey, getClientIp } from "@/lib/rate-limit";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const { createChatSession } = await import("@/lib/chat-utils");
-    const ip = getClientIp(request);
-    const rateLimitKey = getRateLimitKey(ip, "create-chat");
 
-    if (!checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000)) {
-      return NextResponse.json(
-        { error: "Rate limit exceeded" },
-        { status: 429 },
-      );
-    }
+    const chat = await createChatSession();
 
-    const { id, key } = await createChatSession();
-
-    return NextResponse.json({ id, key }, { status: 201 });
+    // ✅ return ONLY the short code
+    return NextResponse.json({ code: chat.key }, { status: 201 });
   } catch (error) {
     console.error("Error creating chat:", error);
     return NextResponse.json(

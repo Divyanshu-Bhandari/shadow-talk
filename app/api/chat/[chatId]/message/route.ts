@@ -6,15 +6,15 @@ import { checkRateLimit, getRateLimitKey, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { chatId: string } },
+  { params }: { params: { chatId: string } }, // chatId = KEY
 ) {
   try {
-    const { chatId } = params;
+    const chatKey = params.chatId;
 
-    const { storeMessage, getChatById } = await import("@/lib/chat-utils");
+    const { storeMessage, getChatByKey } = await import("@/lib/chat-utils");
 
     const ip = getClientIp(request);
-    const rateLimitKey = getRateLimitKey(ip, `message-${chatId}`);
+    const rateLimitKey = getRateLimitKey(ip, `message-${chatKey}`);
 
     if (!checkRateLimit(rateLimitKey, 30, 60_000)) {
       return NextResponse.json(
@@ -23,7 +23,8 @@ export async function POST(
       );
     }
 
-    const chat = await getChatById(chatId);
+    // ✅ lookup by KEY
+    const chat = await getChatByKey(chatKey);
     if (!chat) {
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
@@ -41,7 +42,8 @@ export async function POST(
       return NextResponse.json({ error: "Invalid content" }, { status: 400 });
     }
 
-    const message = await storeMessage(chatId, content);
+    // ✅ store using DB id
+    const message = await storeMessage(chat.id, content);
 
     return NextResponse.json({ id: message.id }, { status: 201 });
   } catch (error) {

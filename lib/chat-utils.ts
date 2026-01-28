@@ -9,22 +9,29 @@ const CHAT_TTL_MINUTES = 30;
 export async function createChatSession() {
   const expiresAt = new Date(Date.now() + CHAT_TTL_MINUTES * 60 * 1000);
 
-  const chat = await prisma.chat.create({
+  return prisma.chat.create({
     data: {
-      key: nanoid(16),
+      key: nanoid(5), // 🔑 shareable short key
       expiresAt,
     },
   });
-
-  return chat;
 }
 
 /**
- * Get chat by ID
+ * Get chat by DATABASE ID (internal use)
  */
 export async function getChatById(chatId: string) {
   return prisma.chat.findUnique({
     where: { id: chatId },
+  });
+}
+
+/**
+ * ✅ Get chat by SHARE KEY (URL-safe)
+ */
+export async function getChatByKey(key: string) {
+  return prisma.chat.findUnique({
+    where: { key },
   });
 }
 
@@ -56,16 +63,10 @@ export async function getUndeliveredMessages(chatId: string) {
 }
 
 /**
- * Mark messages as delivered (one-time)
+ * Mark messages as delivered
  */
 export async function markMessagesAsDelivered(messageIds: string[]) {
-  // if (messageIds.length === 0) return;
-
-  // await prisma.message.updateMany({
-  //   where: { id: { in: messageIds } },
-  //   data: { delivered: true },
-  // });
-
+  // enable later if needed
   console.log(`Marked ${messageIds.length} messages as delivered.`);
 }
 
@@ -73,13 +74,9 @@ export async function markMessagesAsDelivered(messageIds: string[]) {
  * Cleanup expired chats
  */
 export async function cleanupExpiredChats() {
-  const now = new Date();
-
   await prisma.chat.deleteMany({
     where: {
-      expiresAt: { lt: now },
+      expiresAt: { lt: new Date() },
     },
   });
-
-  console.log("Cleaned up expired chats.");
 }

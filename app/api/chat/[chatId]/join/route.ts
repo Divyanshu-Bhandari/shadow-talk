@@ -5,15 +5,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { chatId: string } },
+  { params }: { params: { chatId: string } }, // chatId == key
 ) {
   try {
-    const { chatId } = params;
+    const key = params.chatId;
 
-    // 🔥 LAZY IMPORT (VERY IMPORTANT)
-    const { getChatById } = await import("@/lib/chat-utils");
+    const { getChatByKey } = await import("@/lib/chat-utils");
 
-    const chat = await getChatById(chatId);
+    const chat = await getChatByKey(key);
     if (!chat) {
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
