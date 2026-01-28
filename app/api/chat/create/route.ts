@@ -2,11 +2,11 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { createChatSession } from "@/lib/chat-utils";
 import { checkRateLimit, getRateLimitKey, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const { createChatSession } = await import("@/lib/chat-utils");
     const ip = getClientIp(request);
     const rateLimitKey = getRateLimitKey(ip, "create-chat");
 

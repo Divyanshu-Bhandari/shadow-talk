@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { cleanupExpiredChats } from "@/lib/chat-utils";
 
 export async function POST(request: NextRequest) {
   try {
+    const { cleanupExpiredChats } = await import("@/lib/chat-utils");
     const secret = process.env.CLEANUP_SECRET;
     if (!secret) {
       return NextResponse.json(

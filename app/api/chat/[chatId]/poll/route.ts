@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { getChatById } from "@/lib/chat-utils";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, getClientIp } from "@/lib/rate-limit";
 
@@ -11,6 +10,7 @@ export async function GET(
   { params }: { params: { chatId: string } },
 ) {
   try {
+    const { getChatById } = await import("@/lib/chat-utils");
     const { chatId } = params;
     const ip = getClientIp(request);
     const rateLimitKey = getRateLimitKey(ip, `poll-${chatId}`);

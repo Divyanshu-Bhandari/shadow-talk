@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { storeMessage, getChatById } from "@/lib/chat-utils";
 import { checkRateLimit, getRateLimitKey, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(
@@ -11,6 +10,9 @@ export async function POST(
 ) {
   try {
     const { chatId } = params;
+
+    const { storeMessage, getChatById } = await import("@/lib/chat-utils");
+
     const ip = getClientIp(request);
     const rateLimitKey = getRateLimitKey(ip, `message-${chatId}`);
 
@@ -35,7 +37,7 @@ export async function POST(
 
     const { content } = await request.json();
 
-    if (!content || typeof content !== "string" || content.length > 20000) {
+    if (!content || typeof content !== "string" || content.length > 20_000) {
       return NextResponse.json({ error: "Invalid content" }, { status: 400 });
     }
 
