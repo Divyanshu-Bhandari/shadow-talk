@@ -33,7 +33,7 @@ export default function Chat({ chatId, chatKey }: ChatProps) {
 
   const shareUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/chat/${chatId}?key=${chatKey}`
+      ? `${window.location.origin}/chat/${chatKey}`
       : "";
 
   /* ---------------- VISIBILITY / FOCUS ---------------- */
