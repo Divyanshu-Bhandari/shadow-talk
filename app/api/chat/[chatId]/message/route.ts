@@ -38,7 +38,7 @@ export async function POST(
 
     const { content } = await request.json();
 
-    if (!content || typeof content !== "string" || content.length > 20_000) {
+    if (!content || typeof content !== "string" || content.length > 40_000) {
       return NextResponse.json({ error: "Invalid content" }, { status: 400 });
     }
 
