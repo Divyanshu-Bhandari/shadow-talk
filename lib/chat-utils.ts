@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 import { nanoid } from "nanoid";
 
-const CHAT_TTL_MINUTES = 30;
+const CHAT_TTL_MINUTES = 180;
 
 /**
  * Create new chat session
